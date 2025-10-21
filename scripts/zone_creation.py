@@ -4,23 +4,23 @@ import sys
 
 import cv2
 
-roi = []
+roi_line = []  # Will store two points defining the line
 
 
-def draw_rectangle(event, x, y, flags, param):
-    global roi, img_copy
+def draw_line(event, x, y, flags, param):
+    global roi_line, img_copy
     if event == cv2.EVENT_LBUTTONDOWN:
-        roi = [(x, y)]
+        roi_line = [(x, y)]
     elif event == cv2.EVENT_LBUTTONUP:
-        roi.append((x, y))
-        cv2.rectangle(img_copy, roi[0], roi[1], (0, 255, 255), 2)
+        roi_line.append((x, y))
+        cv2.line(img_copy, roi_line[0], roi_line[1], (0, 255, 255), 2)
         cv2.imshow("Frame", img_copy)
-        print("ROI coordinates:", roi)
+        print("Line ROI coordinates:", roi_line)
 
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(
-    description="Create zones for footfall counter by drawing ROI on video frame"
+    description="Create line ROI for footfall counter by drawing on video frame"
 )
 parser.add_argument("video_path", help="Path to the input video file")
 args = parser.parse_args()
@@ -52,31 +52,35 @@ if not ret:
 
 img_copy = frame.copy()
 cv2.imshow("Frame", img_copy)
-cv2.setMouseCallback("Frame", draw_rectangle)
+cv2.setMouseCallback("Frame", draw_line)
 
-print("Click and drag to draw the door ROI, release to confirm.")
+print("Click and drag to draw the door ROI line, release to confirm.")
 cv2.waitKey(0)
 cv2.destroyAllWindows()
 
 # Extract coordinates
-if len(roi) == 2:
-    x_min, y_min = roi[0]
-    x_max, y_max = roi[1]
-    door_roi = (x_min, y_min, x_max, y_max)
-    print("Final ROI:", door_roi)
+if len(roi_line) == 2:
+    x1, y1 = roi_line[0]
+    x2, y2 = roi_line[1]
+    door_roi_line = (x1, y1, x2, y2)
+    print("Final line ROI:", door_roi_line)
+
     frame_h, frame_w = frame.shape[:2]
 
-    x_min_norm = x_min / frame_w
-    y_min_norm = y_min / frame_h
-    x_max_norm = x_max / frame_w
-    y_max_norm = y_max / frame_h
+    # Normalize coordinates
+    x1_norm = x1 / frame_w
+    y1_norm = y1 / frame_h
+    x2_norm = x2 / frame_w
+    y2_norm = y2 / frame_h
 
-    door_roi_normalized = (x_min_norm, y_min_norm, x_max_norm, y_max_norm)
-    print("Normalized ROI:", door_roi_normalized)
+    door_roi_line_normalized = (x1_norm, y1_norm, x2_norm, y2_norm)
+    print("Normalized line ROI:", door_roi_line_normalized)
 
-    frame = cv2.rectangle(frame, roi[0], roi[1], (0, 255, 0), 2)
+    # Draw line on frame
+    frame = cv2.line(frame, roi_line[0], roi_line[1], (0, 255, 0), 2)
 
 # Save frame
-image_path = os.path.expanduser("data/roi_frame.jpg")
+image_path = os.path.expanduser("data/roi_line_frame.jpg")
+os.makedirs(os.path.dirname(image_path), exist_ok=True)
 cv2.imwrite(image_path, frame)
 print(f"Frame saved to {image_path}")
