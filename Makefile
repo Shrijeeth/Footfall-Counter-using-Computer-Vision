@@ -25,3 +25,6 @@ mark-video-zone:
 
 run:
 	python run.py
+
+run-ui:
+	python run_ui.py

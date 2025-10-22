@@ -4,7 +4,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -17,7 +25,6 @@ from app.models.user import User
 from app.schemas.processing_job import (
     LivestreamProcessingRequest,
     ProcessingJobResponse,
-    VideoProcessingRequest,
 )
 from app.services.video_processor import VideoProcessor
 
@@ -99,23 +106,35 @@ def process_video_background(
 async def upload_and_process_video(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    request: VideoProcessingRequest = Depends(),
+    config_id: int = Form(..., alias="config_id"),
+    confidence_threshold: float = Form(None),
+    debounce_frames: int = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     """Upload a video file and start processing."""
     # Validate file
-    if not file.content_type.startswith("video/"):
-        raise HTTPException(status_code=400, detail="File must be a video")
+    if not file.content_type or not file.content_type.startswith("video/"):
+        # Also check file extension as fallback
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
 
-    if file.size > settings.MAX_FILE_SIZE:
+        file_ext = Path(file.filename).suffix.lower()
+        valid_extensions = [".mp4", ".avi", ".mov", ".mkv", ".webm", ".flv"]
+        if file_ext not in valid_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail="File must be a video (mp4, avi, mov, mkv, webm, flv)",
+            )
+
+    if file.size and file.size > settings.MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large")
 
     # Get configuration
     config = (
         db.query(Configuration)
         .filter(
-            Configuration.id == request.configuration_id,
+            Configuration.id == config_id,
             Configuration.owner_id == current_user.id,
         )
         .first()
@@ -148,8 +167,8 @@ async def upload_and_process_video(
 
     # Start background processing
     roi_coords = (config.roi_x1, config.roi_y1, config.roi_x2, config.roi_y2)
-    confidence = request.confidence_threshold or config.confidence_threshold
-    debounce_frames = request.debounce_frames or config.debounce_frames
+    confidence = confidence_threshold or config.confidence_threshold
+    debounce_frames = debounce_frames or config.debounce_frames
 
     background_tasks.add_task(
         process_video_background,
