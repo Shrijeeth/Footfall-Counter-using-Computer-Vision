@@ -214,3 +214,4 @@ runs
 uploads/
 static/
 footfall_counter.db
+*.zip
