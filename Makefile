@@ -22,3 +22,6 @@ mark-video-zone:
 		exit 1; \
 	fi
 	python scripts/zone_creation.py $(VIDEO)
+
+run:
+	python run.py

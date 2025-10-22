@@ -1,7 +1,35 @@
+# Core ML/CV dependencies
 lap==0.5.12
 matplotlib==3.10.7
 opencv-python==4.12.0.88
 ultralytics==8.3.217
+
+# Jupyter notebook dependencies
 ipykernel==7.0.1
 ipywidgets==8.1.7
 notebook==7.4.7
+
+# FastAPI and web framework dependencies
+fastapi==0.119.1
+uvicorn[standard]==0.38.0
+python-multipart==0.0.20
+websockets==15.0.1
+
+# Database dependencies
+sqlalchemy==2.0.44
+alembic==1.17.0
+
+# Authentication dependencies
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-decouple==3.8
+
+# Background task processing
+celery==5.5.3
+redis==6.4.0
+
+# Additional utilities
+pydantic[email]==2.12.3
+pydantic-settings==2.11.0
+aiofiles==25.1.0
